@@ -1,6 +1,3 @@
-#Luis Huang Tang
-#Updated 2024-09-20 
-
 import pyad.adquery, calendar, datetime, sys, os
 import win32com.client as win32
 from talentLMScreate import createLMSuser, enrollToCourse
