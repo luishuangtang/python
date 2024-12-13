@@ -1,10 +1,15 @@
+#Luis Huang Tang
+#Updated 2024-09-20 
+
 import pyad.adquery, calendar, datetime, sys, os
-import win32com.client as win32   
+import win32com.client as win32
+from talentLMScreate import createLMSuser, enrollToCourse
+
 os.system('cls')
 outlook = win32.Dispatch('outlook.application')
 
 employeeOUs = [ 
-            #add OUs
+            #Enter OU
             ]
 
 q = pyad.adquery.ADQuery()
@@ -24,11 +29,10 @@ def formatName(nameInput):
     nameFullC = " ".join(word.capitalize() for word in nameInput.split())
 
 def query(nameUser):
-    global eAddress, nameInput, userDN, nameID, nameInitals, nameFullC, UPN
-
+    global eAddress, nameInput, userDN, nameID, nameInitals, nameFullC, UPN, givenName, surName
     for x in employeeOUs:
         q.execute_query(
-            attributes = ["cn","mail", "objectClass", "sAMAccountName", "manager","distinguishedName", "userPrincipalName"],
+            attributes = ["cn","mail", "objectClass", "sAMAccountName", "manager","distinguishedName", "userPrincipalName", "givenName", "sn"],
             where_clause = "objectClass = '*'",
             base_dn = x            
         )
@@ -42,6 +46,8 @@ def query(nameUser):
                     nameFullC = row["cn"]
                     nameInitals = "".join(word[0] for word in nameFullC.split())
                     UPN = row["userPrincipalName"]
+                    givenName = row["givenName"]
+                    surName = row["sn"]
                     queryManager(row["manager"])
                     return
                                      
@@ -69,8 +75,7 @@ def emailer(message, subject, ccHelpDesk, ccNewUser, toManager):
     mail.To = toManager
     mail.Cc = ccHelpDesk + "; " + ccNewUser
     mail.Subject = subject
-    mail.Attachments.Add("<redacted>") # Replace <redacted> with path of attachment
-    mail.Attachments.Add("<redacted>")
+    mail.Attachments.Add("example.pdf")
     mail.GetInspector
     
     index = mail.HTMLbody.find('>', mail.HTMLbody.find('<body')) 
@@ -82,7 +87,7 @@ loop = True
 while loop == True:                    
     nameInput = nameCheck(input("Enter full name: "))
     formatName(nameInput)
-    print(nameFullC)
+    #print(nameFullC)
     query(nameFullC)
 
     genderInput = (input("(M)ale or (F)emale? ")).lower()
@@ -110,12 +115,12 @@ while loop == True:
             print("Please enter valid date and/or format. Ex.2022/01/07")
             correctDate = False
 
-    file = open(r"Template.txt")
+    file = open(r"template.txt")
     text = file.read()
     text = text.replace("fullName", nameFullC)
     text = text.replace("eAddress", eAddress)
 
-    if "<redacted>" not in eAddress: #Replace <redacted> with doamin
+    if "@example.com" not in eAddress:    
         text = text.replace("UPN", UPN)
     else:        
         text = text.replace('<pre><span style="font-size:11.0pt;font-family:&quot;Calibri&quot;,sans-serif">Email username: UPN<o:p></o:p></span></pre>', "")
@@ -126,16 +131,19 @@ while loop == True:
     text = text.replace("managerFN", managerGN)
     text = text.replace ("nameFirst", nameFullC.split(' ', 1)[0])
 
-    emailer(text, "Network & Email Account - " + nameFullC, "<redacted>", eAddress, managerDN) #Replace <redacted> with an email like helpdesk shared mailbox
+    emailer(text, "Network & Email Account - " + nameFullC, "helpdesk@exmaple.com", eAddress, managerDN)
 
-    looper = input("Create another one? (Y)/(N): ").lower()
+    createLMSuser(givenName, surName, eAddress, UPN) 
+    enrollToCourse(eAddress)
+
+    loop = input("Another one? (Y)/(N): ").lower()
     while True:
-        if looper == "y" or looper == "yes":
+        if loop == "y" or djKhaled == "yes":
             loop == True
             cls = lambda: os.system('cls')
             cls()
             break
-        if looper == "n" or looper == "no":
+        if loop == "n" or loop == "no":
             sys.exit()
         else:
-            looper = input("Invalid input. Another one? (Y)/(N): ").lower()
+            loop = input("Invalid input. Another one? (Y)/(N): ").lower()
